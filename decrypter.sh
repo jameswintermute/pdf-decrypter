@@ -1,6 +1,5 @@
 #!/bin/bash
-# Decrypt all PDF files in the current directory using qpdf with a CLI progress bar
-# Output files will be saved in 'output/' with a 'un-encrypted-' prefix
+# Decrypt encrypted PDFs in current directory with progress bar and skip unencrypted files
 
 OUTPUT_DIR="output"
 mkdir -p "$OUTPUT_DIR"
@@ -17,26 +16,40 @@ if [ "$total_files" -eq 0 ]; then
     exit 1
 fi
 
-echo "Starting decryption of $total_files file(s)..."
+echo "Scanning and decrypting $total_files PDF file(s)..."
 
+processed=0
+skipped=0
 counter=0
+
 for filepath in "${pdf_files[@]}"; do
     ((counter++))
     filename=$(basename "$filepath")
-    output_filename="un-encrypted - $filename"
+    output_filename="un-encrypted-$filename"
     output_path="$OUTPUT_DIR/$output_filename"
 
-    qpdf --password="$PDF_PASSWORD" --decrypt "$filepath" "$output_path" 2>/dev/null
-
-    if [ $? -eq 0 ]; then
-        status="Success"
+    # Check if PDF is already unencrypted
+    if qpdf --show-encryption "$filepath" 2>/dev/null | grep -q "not encrypted"; then
+        ((skipped++))
+        status="Skipped (already unencrypted)"
     else
-        status="Failed"
+        # Attempt decryption
+        if qpdf --password="$PDF_PASSWORD" --decrypt "$filepath" "$output_path" 2>/dev/null; then
+            ((processed++))
+            status="Decrypted"
+        else
+            status="Failed (bad password?)"
+        fi
     fi
 
-    # Display progress
+    # Show progress
     progress=$((counter * 100 / total_files))
-    printf "\r[%3d%%] %s -> %s (%s)" "$progress" "$filename" "$output_filename" "$status"
+    printf "\r[%3d%%] %-30s -> %-30s (%s)" "$progress" "$filename" "$output_filename" "$status"
+    echo
 done
 
-echo -e "\nDecryption process complete. Files saved to '$OUTPUT_DIR/'."
+echo
+echo "✅ Done."
+echo "🔓 Decrypted: $processed"
+echo "⏩ Skipped (already unencrypted): $skipped"
+echo "📂 Output folder: '$OUTPUT_DIR'"
