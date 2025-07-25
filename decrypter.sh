@@ -1,6 +1,6 @@
 #!/bin/bash
 # Decrypt all PDF files in the current directory using qpdf with a CLI progress bar
-# Written 2025, James Wintermute. Refined with ChatGPT.
+# Output files will be saved in 'output/' with a 'un-encrypted-' prefix
 
 OUTPUT_DIR="output"
 mkdir -p "$OUTPUT_DIR"
@@ -23,7 +23,8 @@ counter=0
 for filepath in "${pdf_files[@]}"; do
     ((counter++))
     filename=$(basename "$filepath")
-    output_path="$OUTPUT_DIR/$filename"
+    output_filename="un-encrypted - $filename"
+    output_path="$OUTPUT_DIR/$output_filename"
 
     qpdf --password="$PDF_PASSWORD" --decrypt "$filepath" "$output_path" 2>/dev/null
 
@@ -33,9 +34,9 @@ for filepath in "${pdf_files[@]}"; do
         status="Failed"
     fi
 
-    # Display progress bar
+    # Display progress
     progress=$((counter * 100 / total_files))
-    printf "\r[%3d%%] %s (%s)" "$progress" "$filename" "$status"
+    printf "\r[%3d%%] %s -> %s (%s)" "$progress" "$filename" "$output_filename" "$status"
 done
 
-echo -e "\nDecryption process complete."
+echo -e "\nDecryption process complete. Files saved to '$OUTPUT_DIR/'."
