@@ -24,7 +24,7 @@ counter=0
 for filepath in "${pdf_files[@]}"; do
     ((counter++))
     filename=$(basename "$filepath")
-    output_filename="un-encrypted-$filename"
+    output_filename="un-encrypted - $filename"
     output_path="$OUTPUT_DIR/$output_filename"
 
     qpdf --password="$PDF_PASSWORD" --decrypt "$filepath" "$output_path" 2>/dev/null
